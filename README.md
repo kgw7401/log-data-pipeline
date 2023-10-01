@@ -3,4 +3,4 @@
 
 ## Architecture
 
-![](event-data-pipeline-architecture.png)
+![](event-data-pipeline-architecture.jpeg)
