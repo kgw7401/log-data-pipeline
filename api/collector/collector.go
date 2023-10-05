@@ -10,7 +10,7 @@ func collectHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	print(string(body))
+	println(string(body))
 }
 
 func NewHttpHandler() http.Handler {
