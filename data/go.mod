@@ -1,4 +1,4 @@
-module log-data-pipeline
+module github.com/log-data-pipeline/data
 
 go 1.21.0
 
