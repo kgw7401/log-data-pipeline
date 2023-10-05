@@ -1,10 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"net/http"
 
 	"github.com/go-faker/faker/v4"
 )
+
+// send_data
+func sendMessage(data []byte) {
+	_, err := http.Post("http://localhost:3000", "application/json", bytes.NewReader(data))
+	if err != nil {
+		panic(err)
+	}
+}
 
 // view_home
 type ViewHome struct {
@@ -77,6 +87,9 @@ func GenerateViewSearchResult() (data []byte) {
 }
 
 func main() {
-	GenerateViewHome()
-	GenerateViewSearchResult()
+	viewHomeData := GenerateViewHome()
+	viewSerachResult := GenerateViewSearchResult()
+
+	sendMessage(viewHomeData)
+	sendMessage(viewSerachResult)
 }
