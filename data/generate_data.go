@@ -11,8 +11,9 @@ import (
 )
 
 // send_data
-func sendMessage(data []byte) {
-	_, err := http.Post("http://localhost:3000", "application/json", bytes.NewReader(data))
+func sendMessage(eventName string, data []byte) {
+	url := "http://localhost:3000/?event_name=" + eventName
+	_, err := http.Post(url, "application/json", bytes.NewReader(data))
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -26,7 +27,7 @@ func maybeSetField(probability float64) bool {
 // view_home
 type ViewHome struct {
 	EventName string `json:"event_name,omitempty"`
-	UserID    int    `json:"user_id,omitempty"`
+	UserID    string `faker:"username" json:"user_id,omitempty"`
 	DeviceID  string `faker:"uuid_hyphenated" json:"device_id,omitempty"`
 	Platform  string `faker:"oneof: web, ios, android" json:"platform,omitempty"`
 }
@@ -128,7 +129,7 @@ func GenerateViewSearchResult() (data []byte) {
 
 func main() {
 	viewHomeData := GenerateViewHome()
-	sendMessage(viewHomeData)
+	sendMessage("view_home", viewHomeData)
 	// viewSearchResultData := GenerateViewSearchResult()
 	// sendMessage(viewSearchResultData)
 }

@@ -1,28 +1,16 @@
 package kafka
 
 import (
-	"encoding/json"
+	"encoding/binary"
 	"fmt"
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry"
-	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry/serde"
-	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry/serde/jsonschema"
+	"github.com/riferrei/srclient"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
-func ProduceData(topic string, data []byte) {
-
-	var d interface{}
-
-	switch topic {
-	case "view_home":
-		d = ViewHome{}
-		json.Unmarshal(data, &d)
-	case "view_searchResult":
-		d = ViewSearchResult{}
-		json.Unmarshal(data, &d)
-	}
+func ProduceData(topic string, data map[string]interface{}) {
 
 	conf := ReadConfig()
 
@@ -42,35 +30,65 @@ func ProduceData(topic string, data []byte) {
 
 	fmt.Printf("Created Producer %v\n", p)
 
-	client, err := schemaregistry.NewClient(schemaregistry.NewConfig("http://localhost:8081"))
+	d, err := json.Marshal(data)
+	if err != nil {
+		fmt.Printf("Failed to marshal data: %s\n", err)
+		os.Exit(1)
+	}
+
+	schemaRegistryClient := srclient.CreateSchemaRegistryClient("http://localhost:8081")
+	schema, err := schemaRegistryClient.GetLatestSchema(topic + "-value")
+	if err != nil {
+		panic(fmt.Sprintf("Error getting the schema %s", err))
+	}
+
+	err = schema.JsonSchema().Validate(data)
+	if err != nil {
+		panic(fmt.Sprintf("Error validating the data %s", err))
+	}
+	schemaIDBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(schemaIDBytes, uint32(schema.ID()))
+
+	var recordValue []byte
+	recordValue = append(recordValue, byte(0))
+	recordValue = append(recordValue, schemaIDBytes...)
+	recordValue = append(recordValue, d...)
+	// client, err := schemaregistry.NewClient(schemaregistry.NewConfig("http://localhost:8081"))
+
+	// if err != nil {
+	// 	fmt.Printf("Failed to create schema registry client: %s\n", err)
+	// 	os.Exit(1)
+	// }
+
+	// serdeConfig := jsonschema.NewSerializerConfig()
+	// serdeConfig.AutoRegisterSchemas = false
+	// serdeConfig.UseLatestVersion = true
+	// serdeConfig.EnableValidation = true
+
+	// ser, err := jsonschema.NewSerializer(client, serde.ValueSerde, serdeConfig)
+
+	// if err != nil {
+	// 	fmt.Printf("Failed to create serializer: %s\n", err)
+	// 	os.Exit(1)
+	// }
+
+	// Optional delivery channel, if not specified the Producer object's
+	// .Events channel is used.
+	deliveryChan := make(chan kafka.Event)
+	// payload, err := ser.Serialize(topic, &d)
 
 	if err != nil {
 		fmt.Printf("Failed to create schema registry client: %s\n", err)
 		os.Exit(1)
 	}
 
-	serdeConfig := jsonschema.NewSerializerConfig()
-	serdeConfig.AutoRegisterSchemas = false
-	serdeConfig.UseLatestVersion = true
-
-	ser, err := jsonschema.NewSerializer(client, serde.ValueSerde, serdeConfig)
-
-	if err != nil {
-		fmt.Printf("Failed to create serializer: %s\n", err)
-		os.Exit(1)
-	}
-
-	// Optional delivery channel, if not specified the Producer object's
-	// .Events channel is used.
-	deliveryChan := make(chan kafka.Event)
-	payload, err := ser.Serialize(topic, &d)
 	if err != nil {
 		fmt.Printf("Failed to serialize payload: %s\n", err)
 		os.Exit(1)
 	}
 	err = p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          payload,
+		Value:          recordValue,
 	}, deliveryChan)
 	if err != nil {
 		fmt.Printf("Produce failed: %v\n", err)

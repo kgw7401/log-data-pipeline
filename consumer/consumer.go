@@ -12,11 +12,10 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry/serde/jsonschema"
 )
 
-type ViewHome struct {
-	EventName string `json:"event_name,omitempty"`
-	UserID    string `json:"user_id,omitempty"`
-	DeviceID  string `json:"device_id,omitempty"`
-	Platform  string `json:"platform,omitempty"`
+type User struct {
+	Name           string `json:"name"`
+	FavoriteNumber int64  `json:"favorite_number"`
+	FavoriteColor  string `json:"favorite_color"`
 }
 
 func main() {
@@ -68,13 +67,12 @@ func main() {
 
 			switch e := ev.(type) {
 			case *kafka.Message:
-				value := ViewHome{}
+				value := User{}
 				fmt.Println(*e.TopicPartition.Topic)
 				err := deser.DeserializeInto(*e.TopicPartition.Topic, e.Value, &value)
 				if err != nil {
 					fmt.Printf("Failed to deserialize payload: %s\n", err)
 				} else {
-
 					fmt.Printf("%% Message on %s:\n%+v\n", e.TopicPartition, value)
 				}
 				if e.Headers != nil {
