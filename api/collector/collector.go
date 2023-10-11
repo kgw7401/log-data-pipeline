@@ -10,10 +10,13 @@ import (
 
 func collectHandler(w http.ResponseWriter, r *http.Request) {
 	data, _ := io.ReadAll(r.Body)
-	result := make(map[string]string)
+	q := r.URL.Query()
+	eventName := q.Get("event_name")
+
+	result := make(map[string]interface{})
 	_ = json.Unmarshal(data, &result)
-	eventName := result["event_name"]
-	kafka.ProduceData(eventName, data)
+
+	kafka.ProduceData(eventName, result)
 }
 
 func NewHttpHandler() http.Handler {
