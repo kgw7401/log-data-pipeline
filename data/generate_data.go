@@ -33,7 +33,7 @@ type ViewHome struct {
 	Platform  string `faker:"oneof: web, ios, android" json:"platform,omitempty"`
 }
 
-func GenerateViewHome(c chan []byte) {
+func GenerateViewHome() {
 	ViewHome := ViewHome{}
 	err := faker.FakeData(&ViewHome)
 	if err != nil {
@@ -110,7 +110,7 @@ func GenerateFilter(filter *Filter) Filter {
 	return *filter
 }
 
-func GenerateViewSearchResult(c chan []byte) {
+func GenerateViewSearchResult() {
 	filter := Filter{}
 	generatedFilter := GenerateFilter(&filter)
 	ViewSearchResult := &ViewSearchResult{}
@@ -130,10 +130,9 @@ func GenerateViewSearchResult(c chan []byte) {
 }
 
 func main() {
-	c := make(chan []byte)
 	for {
-		go GenerateViewHome(c)
-		go GenerateViewSearchResult(c)
+		go GenerateViewHome()
+		go GenerateViewSearchResult()
 		time.Sleep(3 * time.Second)
 	}
 }

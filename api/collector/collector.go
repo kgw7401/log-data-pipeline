@@ -8,6 +8,16 @@ import (
 	"github.com/log-data-pipeline/api/kafka"
 )
 
+var kafkaProducer *kafka.KafkaProducer
+
+func init() {
+	var err error
+	kafkaProducer, err = kafka.NewKafkaProducer()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func collectHandler(w http.ResponseWriter, r *http.Request) {
 	data, _ := io.ReadAll(r.Body)
 	q := r.URL.Query()
@@ -16,7 +26,12 @@ func collectHandler(w http.ResponseWriter, r *http.Request) {
 	result := make(map[string]interface{})
 	_ = json.Unmarshal(data, &result)
 
-	kafka.ProduceData(eventName, result)
+	serializedData, err := kafkaProducer.Serialize(eventName, result)
+	if err != nil {
+		kafkaProducer.Produce("dlt.event", serializedData)
+	} else {
+		kafkaProducer.Produce(eventName, serializedData)
+	}
 }
 
 func NewHttpHandler() http.Handler {

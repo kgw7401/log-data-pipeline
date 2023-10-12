@@ -10,32 +10,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
-func ProduceData(topic string, data map[string]interface{}) {
+type KafkaProducer struct {
+	producer *kafka.Producer
+}
 
+func NewKafkaProducer() (k *KafkaProducer, err error) {
 	conf := ReadConfig()
 
 	p, err := kafka.NewProducer(&conf)
-
 	if err != nil {
-		fmt.Printf("Failed to create producer: %s", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	defer p.Close()
+	return &KafkaProducer{
+		producer: p,
+	}, nil
+}
 
-	if err != nil {
-		fmt.Printf("Failed to create producer: %s\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Created Producer %v\n", p)
-
-	d, err := json.Marshal(data)
-	if err != nil {
-		fmt.Printf("Failed to marshal data: %s\n", err)
-		os.Exit(1)
-	}
-
+func (k *KafkaProducer) Serialize(topic string, data map[string]interface{}) ([]byte, error) {
 	schemaRegistryClient := srclient.CreateSchemaRegistryClient("http://localhost:8081")
 	schema, err := schemaRegistryClient.GetLatestSchema(topic + "-value")
 	if err != nil {
@@ -44,7 +36,11 @@ func ProduceData(topic string, data map[string]interface{}) {
 
 	err = schema.JsonSchema().Validate(data)
 	if err != nil {
-		panic(fmt.Sprintf("Error validating the data %s", err))
+		return nil, err
+	}
+	d, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
 	}
 	schemaIDBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(schemaIDBytes, uint32(schema.ID()))
@@ -54,20 +50,15 @@ func ProduceData(topic string, data map[string]interface{}) {
 	recordValue = append(recordValue, schemaIDBytes...)
 	recordValue = append(recordValue, d...)
 
+	return recordValue, nil
+}
+
+func (k *KafkaProducer) Produce(topic string, data []byte) {
 	deliveryChan := make(chan kafka.Event)
 
-	if err != nil {
-		fmt.Printf("Failed to create schema registry client: %s\n", err)
-		os.Exit(1)
-	}
-
-	if err != nil {
-		fmt.Printf("Failed to serialize payload: %s\n", err)
-		os.Exit(1)
-	}
-	err = p.Produce(&kafka.Message{
+	err := k.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          recordValue,
+		Value:          data,
 	}, deliveryChan)
 	if err != nil {
 		fmt.Printf("Produce failed: %v\n", err)
