@@ -33,20 +33,37 @@ type ViewHome struct {
 	Platform  string `faker:"oneof: web, ios, android" json:"platform,omitempty"`
 }
 
+type WrongViewHome struct {
+	EventName string `json:"event_name,omitempty"`
+	UserID    int    `json:"user_id,omitempty"`
+	DeviceID  int    `json:"device_id,omitempty"`
+	Platform  string `faker:"oneof: web, ios, android" json:"platform,omitempty"`
+}
+
 func GenerateViewHome() {
-	ViewHome := ViewHome{}
-	err := faker.FakeData(&ViewHome)
-	if err != nil {
-		panic(err)
+	var data []byte
+
+	if maybeSetField(0.5) {
+		ViewHome := ViewHome{EventName: "view_home"}
+		err := faker.FakeData(&ViewHome)
+		if err != nil {
+			panic(err)
+		}
+		data, err = json.Marshal(ViewHome)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		WrongViewHome := WrongViewHome{EventName: "view_home"}
+		err := faker.FakeData(&WrongViewHome)
+		if err != nil {
+			panic(err)
+		}
+		data, err = json.Marshal(WrongViewHome)
+		if err != nil {
+			panic(err)
+		}
 	}
-
-	ViewHome.EventName = "view_home"
-
-	data, err := json.Marshal(ViewHome)
-	if err != nil {
-		panic(err)
-	}
-
 	sendMessage("view_home", data)
 }
 
@@ -132,7 +149,7 @@ func GenerateViewSearchResult() {
 func main() {
 	for {
 		go GenerateViewHome()
-		go GenerateViewSearchResult()
-		time.Sleep(3 * time.Second)
+		// go GenerateViewSearchResult()
+		time.Sleep(1 * time.Second)
 	}
 }

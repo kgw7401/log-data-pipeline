@@ -28,7 +28,7 @@ func collectHandler(w http.ResponseWriter, r *http.Request) {
 
 	serializedData, err := kafkaProducer.Serialize(eventName, result)
 	if err != nil {
-		kafkaProducer.Produce("dlt.event", serializedData)
+		kafkaProducer.Produce("dlt.event", data)
 	} else {
 		kafkaProducer.Produce(eventName, serializedData)
 	}
