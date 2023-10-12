@@ -53,29 +53,8 @@ func ProduceData(topic string, data map[string]interface{}) {
 	recordValue = append(recordValue, byte(0))
 	recordValue = append(recordValue, schemaIDBytes...)
 	recordValue = append(recordValue, d...)
-	// client, err := schemaregistry.NewClient(schemaregistry.NewConfig("http://localhost:8081"))
 
-	// if err != nil {
-	// 	fmt.Printf("Failed to create schema registry client: %s\n", err)
-	// 	os.Exit(1)
-	// }
-
-	// serdeConfig := jsonschema.NewSerializerConfig()
-	// serdeConfig.AutoRegisterSchemas = false
-	// serdeConfig.UseLatestVersion = true
-	// serdeConfig.EnableValidation = true
-
-	// ser, err := jsonschema.NewSerializer(client, serde.ValueSerde, serdeConfig)
-
-	// if err != nil {
-	// 	fmt.Printf("Failed to create serializer: %s\n", err)
-	// 	os.Exit(1)
-	// }
-
-	// Optional delivery channel, if not specified the Producer object's
-	// .Events channel is used.
 	deliveryChan := make(chan kafka.Event)
-	// payload, err := ser.Serialize(topic, &d)
 
 	if err != nil {
 		fmt.Printf("Failed to create schema registry client: %s\n", err)

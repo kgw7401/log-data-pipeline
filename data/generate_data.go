@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/go-faker/faker/v4"
 )
@@ -27,12 +28,12 @@ func maybeSetField(probability float64) bool {
 // view_home
 type ViewHome struct {
 	EventName string `json:"event_name,omitempty"`
-	UserID    int    `json:"user_id,omitempty"`
+	UserID    string `faker:"username" json:"user_id,omitempty"`
 	DeviceID  string `faker:"uuid_hyphenated" json:"device_id,omitempty"`
 	Platform  string `faker:"oneof: web, ios, android" json:"platform,omitempty"`
 }
 
-func GenerateViewHome() (data []byte) {
+func GenerateViewHome(c chan []byte) {
 	ViewHome := ViewHome{}
 	err := faker.FakeData(&ViewHome)
 	if err != nil {
@@ -41,12 +42,12 @@ func GenerateViewHome() (data []byte) {
 
 	ViewHome.EventName = "view_home"
 
-	data, err = json.Marshal(ViewHome)
+	data, err := json.Marshal(ViewHome)
 	if err != nil {
 		panic(err)
 	}
 
-	return data
+	sendMessage("view_home", data)
 }
 
 // view_searchResult
@@ -109,7 +110,7 @@ func GenerateFilter(filter *Filter) Filter {
 	return *filter
 }
 
-func GenerateViewSearchResult() (data []byte) {
+func GenerateViewSearchResult(c chan []byte) {
 	filter := Filter{}
 	generatedFilter := GenerateFilter(&filter)
 	ViewSearchResult := &ViewSearchResult{}
@@ -120,16 +121,19 @@ func GenerateViewSearchResult() (data []byte) {
 	ViewSearchResult.EventName = "view_searchResult"
 	ViewSearchResult.Parameters.Filter = generatedFilter
 
-	data, err = json.Marshal(ViewSearchResult)
+	data, err := json.Marshal(ViewSearchResult)
 	if err != nil {
 		panic(err)
 	}
-	return data
+
+	sendMessage("view_searchResult", data)
 }
 
 func main() {
-	viewHomeData := GenerateViewHome()
-	sendMessage("view_home", viewHomeData)
-	// viewSearchResultData := GenerateViewSearchResult()
-	// sendMessage(viewSearchResultData)
+	c := make(chan []byte)
+	for {
+		go GenerateViewHome(c)
+		go GenerateViewSearchResult(c)
+		time.Sleep(3 * time.Second)
+	}
 }
