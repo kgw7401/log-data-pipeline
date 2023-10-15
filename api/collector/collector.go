@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/log-data-pipeline/api/kafka"
 )
 
@@ -26,9 +28,15 @@ func collectHandler(w http.ResponseWriter, r *http.Request) {
 	result := make(map[string]interface{})
 	_ = json.Unmarshal(data, &result)
 
-	serializedData, err := kafkaProducer.Serialize(eventName, result)
-	if err != nil {
-		kafkaProducer.Produce("dlt.event", data)
+	serializedData, serErr := kafkaProducer.Serialize(eventName, result)
+
+	if serErr != nil {
+		err := godotenv.Load(".env")
+		if err != nil {
+			panic(err)
+		}
+		token := os.Getenv("SLACK_TOKEN")
+		kafka.SendSlack(token, "event-alert", serErr.Error(), data)
 	} else {
 		kafkaProducer.Produce(eventName, serializedData)
 	}

@@ -42,7 +42,7 @@ type WrongViewHome struct {
 func GenerateViewHome() {
 	var data []byte
 
-	if maybeSetField(0.9) {
+	if maybeSetField(0.1) {
 		ViewHome := ViewHome{EventName: "view_home"}
 		err := faker.FakeData(&ViewHome)
 		if err != nil {
