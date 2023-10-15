@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/go-faker/faker/v4"
 )
@@ -43,7 +42,7 @@ type WrongViewHome struct {
 func GenerateViewHome() {
 	var data []byte
 
-	if maybeSetField(0.1) {
+	if maybeSetField(0.9) {
 		ViewHome := ViewHome{EventName: "view_home"}
 		err := faker.FakeData(&ViewHome)
 		if err != nil {
@@ -147,9 +146,10 @@ func GenerateViewSearchResult() {
 }
 
 func main() {
-	for {
-		go GenerateViewHome()
-		// go GenerateViewSearchResult()
-		time.Sleep(1 * time.Second)
-	}
+	GenerateViewHome()
+	// for {
+	// 	go GenerateViewHome()
+	// 	// go GenerateViewSearchResult()
+	// 	time.Sleep(5 * time.Second)
+	// }
 }

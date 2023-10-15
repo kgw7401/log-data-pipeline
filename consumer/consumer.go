@@ -67,8 +67,7 @@ func main() {
 
 			switch e := ev.(type) {
 			case *kafka.Message:
-				value := User{}
-				fmt.Println(*e.TopicPartition.Topic)
+				value := map[string]interface{}{}
 				err := deser.DeserializeInto(*e.TopicPartition.Topic, e.Value, &value)
 				if err != nil {
 					fmt.Printf("Failed to deserialize payload: %s\n", err)
